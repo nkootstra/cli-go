@@ -39,7 +39,7 @@ func newLoginCommand() *cobra.Command {
 			return runLogin(cmd, flags)
 		},
 	}
-	addAuthFlags(cmd, &flags)
+	addLoginFlags(cmd, &flags)
 	return cmd
 }
 
@@ -81,7 +81,7 @@ func newDoctorCommand() *cobra.Command {
 			return runDoctor(cmd, flags)
 		},
 	}
-	addAuthFlags(cmd, &flags)
+	addDoctorFlags(cmd, &flags)
 	return cmd
 }
 
@@ -196,14 +196,23 @@ func (f authFlags) overrides() config.Overrides {
 	}
 }
 
-func addAuthFlags(cmd *cobra.Command, flags *authFlags) {
+func addLoginFlags(cmd *cobra.Command, flags *authFlags) {
+	addOIDCFlags(cmd, flags)
+	addAuthStateFlag(cmd, flags)
+}
+
+func addDoctorFlags(cmd *cobra.Command, flags *authFlags) {
+	addOIDCFlags(cmd, flags)
+	addAuthStateFlag(cmd, flags)
+	cmd.Flags().StringVar(&flags.mockIssuerURL, "mock-oidc-issuer-url", "", "Mock OIDC issuer URL for doctor/integration checks; env "+config.EnvMockOIDCIssuerURL)
+}
+
+func addOIDCFlags(cmd *cobra.Command, flags *authFlags) {
 	cmd.Flags().StringVar(&flags.issuerURL, "oidc-issuer-url", "", "OIDC issuer URL; env "+config.EnvOIDCIssuerURL)
 	cmd.Flags().StringVar(&flags.clientID, "oidc-client-id", "", "OIDC client ID; env "+config.EnvOIDCClientID)
 	cmd.Flags().StringVar(&flags.scopes, "oidc-scopes", "", "OIDC scopes separated by spaces or commas; env "+config.EnvOIDCScopes)
 	cmd.Flags().StringVar(&flags.redirectURL, "oidc-redirect-url", "", "OIDC redirect URL; env "+config.EnvOIDCRedirectURL)
 	cmd.Flags().StringVar(&flags.callbackListenAddr, "oidc-callback-listen-addr", "", "Local callback listen address; env "+config.EnvOIDCCallbackListenAddr)
-	addAuthStateFlag(cmd, flags)
-	cmd.Flags().StringVar(&flags.mockIssuerURL, "mock-oidc-issuer-url", "", "Mock OIDC issuer URL for doctor/integration checks; env "+config.EnvMockOIDCIssuerURL)
 }
 
 func addAuthStateFlag(cmd *cobra.Command, flags *authFlags) {

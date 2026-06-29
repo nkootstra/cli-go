@@ -44,10 +44,10 @@ func Run(ctx context.Context, input Input) []Result {
 		checkAuthState(ctx, input.Store),
 	}
 	if input.Config.OIDCIssuerURL != "" {
-		results = append(results, checkDiscovery(ctx, client, input.Config.OIDCIssuerURL))
+		results = append(results, checkDiscovery(ctx, client, "oidc discovery", input.Config.OIDCIssuerURL))
 	}
 	if input.Config.MockOIDCIssuerURL != "" && input.Config.MockOIDCIssuerURL != input.Config.OIDCIssuerURL {
-		results = append(results, checkDiscovery(ctx, client, input.Config.MockOIDCIssuerURL))
+		results = append(results, checkDiscovery(ctx, client, "mock oidc discovery", input.Config.MockOIDCIssuerURL))
 	}
 	return results
 }
@@ -95,19 +95,19 @@ func checkAuthState(ctx context.Context, store auth.Store) Result {
 	return Result{Name: "auth state", Status: StatusPass, Detail: "session state is readable"}
 }
 
-func checkDiscovery(ctx context.Context, client *http.Client, issuerURL string) Result {
+func checkDiscovery(ctx context.Context, client *http.Client, name, issuerURL string) Result {
 	url := strings.TrimRight(issuerURL, "/") + "/.well-known/openid-configuration"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return Result{Name: "oidc discovery", Status: StatusFail, Detail: err.Error(), Remediation: "Check the issuer URL."}
+		return Result{Name: name, Status: StatusFail, Detail: err.Error(), Remediation: "Check the issuer URL."}
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return Result{Name: "oidc discovery", Status: StatusFail, Detail: fmt.Sprintf("unable to reach %s: %v", url, err), Remediation: "Start the provider or update the issuer URL."}
+		return Result{Name: name, Status: StatusFail, Detail: fmt.Sprintf("unable to reach %s: %v", url, err), Remediation: "Start the provider or update the issuer URL."}
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return Result{Name: "oidc discovery", Status: StatusFail, Detail: fmt.Sprintf("%s returned %s", url, resp.Status), Remediation: "Check the issuer URL and provider health."}
+		return Result{Name: name, Status: StatusFail, Detail: fmt.Sprintf("%s returned %s", url, resp.Status), Remediation: "Check the issuer URL and provider health."}
 	}
-	return Result{Name: "oidc discovery", Status: StatusPass, Detail: url}
+	return Result{Name: name, Status: StatusPass, Detail: url}
 }

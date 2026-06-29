@@ -30,6 +30,9 @@ func TestLoginHelpIncludesAuthFlags(t *testing.T) {
 			t.Fatalf("expected login help to contain %q:\n%s", want, stdout)
 		}
 	}
+	if strings.Contains(stdout, "--mock-oidc-issuer-url") {
+		t.Fatalf("login help should not contain doctor-only mock flag:\n%s", stdout)
+	}
 }
 
 func TestLoginMissingConfigFailsBeforeBrowser(t *testing.T) {

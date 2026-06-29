@@ -61,6 +61,20 @@ func TestRunReportsUnreachableOIDCDiscovery(t *testing.T) {
 	}
 }
 
+func TestRunNamesMockDiscoverySeparately(t *testing.T) {
+	results := doctor.Run(t.Context(), doctor.Input{
+		Config: config.Config{
+			OIDCIssuerURL:     "http://127.0.0.1:1",
+			MockOIDCIssuerURL: "http://127.0.0.1:2",
+			OIDCClientID:      "devcli",
+		},
+		Store: auth.NewFileStore(filepath.Join(t.TempDir(), "auth.json")),
+	})
+
+	findResult(t, results, "oidc discovery")
+	findResult(t, results, "mock oidc discovery")
+}
+
 func TestRunReportsMissingStateAsInfo(t *testing.T) {
 	results := doctor.Run(t.Context(), doctor.Input{
 		Config: config.Config{OIDCIssuerURL: "http://127.0.0.1:1", OIDCClientID: "devcli"},

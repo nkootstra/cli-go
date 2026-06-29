@@ -28,15 +28,7 @@ type Config struct {
 	MockOIDCIssuerURL      string
 }
 
-type Overrides struct {
-	OIDCIssuerURL          string
-	OIDCClientID           string
-	OIDCScopes             []string
-	OIDCRedirectURL        string
-	OIDCCallbackListenAddr string
-	AuthStatePath          string
-	MockOIDCIssuerURL      string
-}
+type Overrides = Config
 
 type Input struct {
 	Env       map[string]string

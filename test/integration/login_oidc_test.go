@@ -3,9 +3,9 @@ package integration_test
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -32,7 +32,7 @@ func TestOIDCLoginAgainstMockServer(t *testing.T) {
 		NonceValue:  "integration-nonce",
 		WaitTimeout: 20 * time.Second,
 		OpenURL: func(authURL string) error {
-			return followAuthorizeRedirect(authURL)
+			return followAuthorizeRedirect(authURL, cfg.OIDCRedirectURL)
 		},
 	})
 	if err != nil {
@@ -46,11 +46,16 @@ func TestOIDCLoginAgainstMockServer(t *testing.T) {
 	}
 }
 
-func followAuthorizeRedirect(authURL string) error {
+func followAuthorizeRedirect(authURL, redirectURL string) error {
+	redirectTarget, err := url.Parse(redirectURL)
+	if err != nil {
+		return err
+	}
+
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if strings.Contains(req.URL.String(), "127.0.0.1:8765/callback") {
+			if sameRedirectTarget(req.URL, redirectTarget) {
 				return http.ErrUseLastResponse
 			}
 			return nil
@@ -75,4 +80,10 @@ func followAuthorizeRedirect(authURL string) error {
 		defer callbackResp.Body.Close()
 	}
 	return nil
+}
+
+func sameRedirectTarget(actual, expected *url.URL) bool {
+	return actual.Scheme == expected.Scheme &&
+		actual.Host == expected.Host &&
+		actual.Path == expected.Path
 }
