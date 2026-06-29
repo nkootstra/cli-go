@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrNotLoggedIn = errors.New("no user is logged in")
+	ErrNotLoggedIn    = errors.New("no user is logged in")
 	ErrSessionExpired = errors.New("session is expired")
 )
 

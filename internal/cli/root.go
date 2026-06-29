@@ -14,9 +14,9 @@ var now = time.Now
 
 func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "devcli",
-		Short:         "Developer CLI with OIDC authentication",
-		Long:          "devcli authenticates developers with an OIDC provider and reports local auth health.",
+		Use:          "devcli",
+		Short:        "Developer CLI with OIDC authentication",
+		Long:         "devcli authenticates developers with an OIDC provider and reports local auth health.",
 		SilenceUsage: true,
 	}
 

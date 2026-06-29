@@ -15,28 +15,28 @@ import (
 )
 
 var (
-	ErrStateMismatch = errors.New("oidc callback state mismatch")
-	ErrMissingCode = errors.New("oidc callback is missing code")
+	ErrStateMismatch  = errors.New("oidc callback state mismatch")
+	ErrMissingCode    = errors.New("oidc callback is missing code")
 	ErrMissingIDToken = errors.New("oidc token response is missing id_token")
 )
 
 type URLOpener func(string) error
 
 type LoginOptions struct {
-	Config config.Config
-	Store Store
-	OpenURL URLOpener
-	StateValue string
-	NonceValue string
-	HTTPClient *http.Client
+	Config      config.Config
+	Store       Store
+	OpenURL     URLOpener
+	StateValue  string
+	NonceValue  string
+	HTTPClient  *http.Client
 	WaitTimeout time.Duration
 }
 
 type tokenClaims struct {
 	Subject string `json:"sub"`
-	Email string `json:"email"`
-	Name string `json:"name"`
-	Nonce string `json:"nonce"`
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Nonce   string `json:"nonce"`
 }
 
 func Login(ctx context.Context, opts LoginOptions) (State, error) {
@@ -73,10 +73,10 @@ func Login(ctx context.Context, opts LoginOptions) (State, error) {
 	}
 
 	oauthConfig := oauth2.Config{
-		ClientID: opts.Config.OIDCClientID,
-		Endpoint: provider.Endpoint(),
+		ClientID:    opts.Config.OIDCClientID,
+		Endpoint:    provider.Endpoint(),
 		RedirectURL: opts.Config.OIDCRedirectURL,
-		Scopes: opts.Config.OIDCScopes,
+		Scopes:      opts.Config.OIDCScopes,
 	}
 
 	codeCh, errCh, shutdown, err := listenForCallback(opts.Config.OIDCCallbackListenAddr, stateValue)
@@ -131,15 +131,15 @@ func Login(ctx context.Context, opts LoginOptions) (State, error) {
 
 	session := State{
 		Authenticated: true,
-		Subject: claims.Subject,
-		Issuer: opts.Config.OIDCIssuerURL,
-		Audience: opts.Config.OIDCClientID,
-		Email: claims.Email,
-		Name: claims.Name,
-		ExpiresAt: idToken.Expiry,
-		AccessToken: token.AccessToken,
-		RefreshToken: token.RefreshToken,
-		IDToken: rawIDToken,
+		Subject:       claims.Subject,
+		Issuer:        opts.Config.OIDCIssuerURL,
+		Audience:      opts.Config.OIDCClientID,
+		Email:         claims.Email,
+		Name:          claims.Name,
+		ExpiresAt:     idToken.Expiry,
+		AccessToken:   token.AccessToken,
+		RefreshToken:  token.RefreshToken,
+		IDToken:       rawIDToken,
 	}
 	if err := opts.Store.Write(ctx, session); err != nil {
 		return State{}, err
