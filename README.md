@@ -52,15 +52,62 @@ Do not commit auth state files.
 The repository includes Docker Compose support for `oauth2-mock-server`.
 It is for local development and CI only.
 
+Start the mock OIDC provider:
+
 ```bash
 docker compose up --build -d oauth2-mock-server
-devcli doctor
-devcli login
-devcli whoami
-devcli logout
 ```
 
 The mock server advertises `http://localhost:8080` as its issuer URL, so use `localhost` rather than `127.0.0.1` for `DEVCLI_OIDC_ISSUER_URL`.
+
+## Developer OAuth Test
+
+Use this flow to test the CLI manually against the local OAuth server.
+
+1. Start the mock server:
+
+```bash
+docker compose up --build -d oauth2-mock-server
+```
+
+2. Export local OIDC settings:
+
+```bash
+export DEVCLI_OIDC_ISSUER_URL=http://localhost:8080
+export DEVCLI_OIDC_CLIENT_ID=devcli
+export DEVCLI_OIDC_SCOPES="openid profile email"
+export DEVCLI_OIDC_REDIRECT_URL=http://127.0.0.1:8765/callback
+export DEVCLI_OIDC_CALLBACK_LISTEN_ADDR=127.0.0.1:8765
+```
+
+3. Build the CLI:
+
+```bash
+go build -o devcli ./cmd/devcli
+```
+
+4. Check configuration and login:
+
+```bash
+./devcli doctor
+./devcli login
+```
+
+`login` prints an authorization URL.
+Open it in your browser; the mock server redirects back to the local callback listener and `devcli` saves the verified session.
+
+5. Verify and clear the session:
+
+```bash
+./devcli whoami
+./devcli logout
+```
+
+6. Stop the mock server:
+
+```bash
+docker compose down
+```
 
 ## Tests
 
