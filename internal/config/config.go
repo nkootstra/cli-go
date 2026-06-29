@@ -59,6 +59,12 @@ func Resolve(input Input) Config {
 		MockOIDCIssuerURL:      env[EnvMockOIDCIssuerURL],
 	}
 
+	applyDefaults(&cfg)
+	applyOverrides(&cfg, input.Overrides)
+	return cfg
+}
+
+func applyDefaults(cfg *Config) {
 	if len(cfg.OIDCScopes) == 0 {
 		cfg.OIDCScopes = []string{"openid", "profile", "email"}
 	}
@@ -71,8 +77,9 @@ func Resolve(input Input) Config {
 	if cfg.AuthStatePath == "" {
 		cfg.AuthStatePath = defaultAuthStatePath()
 	}
+}
 
-	overrides := input.Overrides
+func applyOverrides(cfg *Config, overrides Overrides) {
 	if overrides.OIDCIssuerURL != "" {
 		cfg.OIDCIssuerURL = overrides.OIDCIssuerURL
 	}
@@ -94,8 +101,6 @@ func Resolve(input Input) Config {
 	if overrides.MockOIDCIssuerURL != "" {
 		cfg.MockOIDCIssuerURL = overrides.MockOIDCIssuerURL
 	}
-
-	return cfg
 }
 
 type MissingSettingsError struct {

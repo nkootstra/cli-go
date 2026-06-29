@@ -80,12 +80,11 @@ func checkAuthState(ctx context.Context, store auth.Store) Result {
 
 	state, err := store.Read(ctx)
 	if err != nil {
-		status := StatusFail
 		detail := err.Error()
 		if errors.Is(err, auth.ErrCorruptState) {
 			detail = "auth state is corrupt"
 		}
-		return Result{Name: "auth state", Status: status, Detail: detail, Remediation: "Run devcli logout, then devcli login."}
+		return Result{Name: "auth state", Status: StatusFail, Detail: detail, Remediation: "Run devcli logout, then devcli login."}
 	}
 	if !state.Authenticated {
 		return Result{Name: "auth state", Status: StatusInfo, Detail: "no user is logged in"}

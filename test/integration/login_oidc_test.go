@@ -3,7 +3,6 @@ package integration_test
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,15 +68,11 @@ func followAuthorizeRedirect(authURL string) error {
 		if err != nil {
 			return err
 		}
-		if _, err := url.Parse(location.String()); err != nil {
-			return err
-		}
 		callbackResp, err := http.Get(location.String())
 		if err != nil {
 			return err
 		}
 		defer callbackResp.Body.Close()
-		return nil
 	}
 	return nil
 }
