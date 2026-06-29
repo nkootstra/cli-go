@@ -1,0 +1,24 @@
+# Go build artifacts
+/devcli
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test and coverage output
+*.test
+*.out
+coverage.*
+
+# Local environment and auth state
+.env
+.env.*
+!.env.example
+.devcli/
+*.auth.json
+
+# Temporary files
+tmp/
+dist/
+bin/
