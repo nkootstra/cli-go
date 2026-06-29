@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Unit tests
+        run: go test ./...
+
+      - name: Start OIDC mock server
+        run: docker compose up --build -d oauth2-mock-server
+
+      - name: Wait for OIDC mock server
+        run: |
+          for i in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/.well-known/openid-configuration >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker compose logs oauth2-mock-server
+          exit 1
+
+      - name: Integration tests
+        env:
+          DEVCLI_RUN_INTEGRATION: "1"
+          DEVCLI_OIDC_ISSUER_URL: "http://localhost:8080"
+          DEVCLI_OIDC_CLIENT_ID: "devcli"
+          DEVCLI_OIDC_SCOPES: "openid profile email"
+          DEVCLI_OIDC_REDIRECT_URL: "http://127.0.0.1:8765/callback"
+          DEVCLI_OIDC_CALLBACK_LISTEN_ADDR: "127.0.0.1:8765"
+        run: go test ./test/integration

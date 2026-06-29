@@ -1,0 +1,18 @@
+services:
+  oauth2-mock-server:
+    build:
+      context: .
+      dockerfile: test/oauth2-mock-server/Dockerfile
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/.well-known/openid-configuration').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 30
