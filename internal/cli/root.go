@@ -6,6 +6,7 @@ import (
 
 	"github.com/nkootstra/cli/internal/auth"
 	"github.com/nkootstra/cli/internal/config"
+	"github.com/nkootstra/cli/internal/doctor"
 	"github.com/spf13/cobra"
 )
 
@@ -121,14 +122,31 @@ func newWhoamiCommand() *cobra.Command {
 }
 
 func newDoctorCommand() *cobra.Command {
-	return &cobra.Command{
+	var flags authFlags
+	cmd := &cobra.Command{
 		Use:   "doctor",
 		Short: "Check devcli configuration and auth health",
-		Long:  "Check devcli configuration, auth state, Docker mock-provider settings, and OIDC discovery health.",
+		Long:  "Check devcli configuration and auth health, including auth state, Docker mock-provider settings, and OIDC discovery health.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := config.Resolve(config.Input{Overrides: flags.overrides()})
+			results := doctor.Run(cmd.Context(), doctor.Input{
+				Config: cfg,
+				Store:  auth.NewFileStore(cfg.AuthStatePath),
+			})
+			for _, result := range results {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %s: %s\n", result.Status, result.Name, result.Detail)
+				if result.Remediation != "" {
+					fmt.Fprintf(cmd.OutOrStdout(), "  Fix: %s\n", result.Remediation)
+				}
+			}
+			if doctor.HasFailure(results) {
+				return fmt.Errorf("doctor found failing checks")
+			}
 			return nil
 		},
 	}
+	addAuthFlags(cmd, &flags)
+	return cmd
 }
 
 type authFlags struct {
