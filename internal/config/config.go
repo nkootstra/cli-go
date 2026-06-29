@@ -52,7 +52,7 @@ func Resolve(input Input) Config {
 	cfg := Config{
 		OIDCIssuerURL:          env[EnvOIDCIssuerURL],
 		OIDCClientID:           env[EnvOIDCClientID],
-		OIDCScopes:             parseScopes(env[EnvOIDCScopes]),
+		OIDCScopes:             ParseScopes(env[EnvOIDCScopes]),
 		OIDCRedirectURL:        env[EnvOIDCRedirectURL],
 		OIDCCallbackListenAddr: env[EnvOIDCCallbackListenAddr],
 		AuthStatePath:          env[EnvAuthStatePath],
@@ -133,7 +133,7 @@ func IsMissingSetting(err error, name string) bool {
 	return false
 }
 
-func parseScopes(raw string) []string {
+func ParseScopes(raw string) []string {
 	fields := strings.FieldsFunc(raw, func(r rune) bool {
 		return r == ',' || r == ' ' || r == '\t' || r == '\n'
 	})
