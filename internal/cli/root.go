@@ -2,11 +2,14 @@ package cli
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/nkootstra/cli/internal/auth"
 	"github.com/nkootstra/cli/internal/config"
 	"github.com/spf13/cobra"
 )
+
+var now = time.Now
 
 func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -53,25 +56,68 @@ func newLoginCommand() *cobra.Command {
 }
 
 func newLogoutCommand() *cobra.Command {
-	return &cobra.Command{
+	var flags authFlags
+	cmd := &cobra.Command{
 		Use:   "logout",
 		Short: "Remove the saved login session",
 		Long:  "Remove the saved local devcli login session.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+			cfg := config.Resolve(config.Input{Overrides: flags.overrides()})
+			store := auth.NewFileStore(cfg.AuthStatePath)
+			state, err := store.Read(cmd.Context())
+			if err != nil {
+				return err
+			}
+			if err := store.Delete(cmd.Context()); err != nil {
+				return err
+			}
+			if !state.Authenticated {
+				_, err = fmt.Fprintln(cmd.OutOrStdout(), "No active session remains.")
+				return err
+			}
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), "Logged out.")
+			return err
 		},
 	}
+	cmd.Flags().StringVar(&flags.authStatePath, "auth-state-path", "", "Path to devcli auth state; env "+config.EnvAuthStatePath)
+	return cmd
 }
 
 func newWhoamiCommand() *cobra.Command {
-	return &cobra.Command{
+	var flags authFlags
+	cmd := &cobra.Command{
 		Use:   "whoami",
 		Short: "Show the current logged-in identity",
 		Long:  "Show the current logged-in identity stored by devcli login.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := config.Resolve(config.Input{Overrides: flags.overrides()})
+			store := auth.NewFileStore(cfg.AuthStatePath)
+			state, err := store.Read(cmd.Context())
+			if err != nil {
+				return err
+			}
+			session, err := auth.CurrentSession(state, now())
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Subject: %s\n", session.Subject)
+			if session.Email != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Email: %s\n", session.Email)
+			}
+			if session.Name != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Name: %s\n", session.Name)
+			}
+			if session.Issuer != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Issuer: %s\n", session.Issuer)
+			}
+			if session.Audience != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Client ID: %s\n", session.Audience)
+			}
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&flags.authStatePath, "auth-state-path", "", "Path to devcli auth state; env "+config.EnvAuthStatePath)
+	return cmd
 }
 
 func newDoctorCommand() *cobra.Command {
