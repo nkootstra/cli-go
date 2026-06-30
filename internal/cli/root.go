@@ -8,19 +8,29 @@ import (
 	"github.com/nkootstra/cli/internal/auth"
 	"github.com/nkootstra/cli/internal/config"
 	"github.com/nkootstra/cli/internal/doctor"
+	"github.com/nkootstra/cli/internal/version"
 	"github.com/spf13/cobra"
 )
 
 var now = time.Now
 
 func NewRootCommand() *cobra.Command {
+	var showVersion bool
 	cmd := &cobra.Command{
 		Use:          "devcli",
 		Short:        "Developer CLI with OIDC authentication",
 		Long:         "devcli authenticates developers with an OIDC provider and reports local auth health.",
 		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if showVersion {
+				_, err := fmt.Fprintf(cmd.OutOrStdout(), "devcli %s\n", version.String())
+				return err
+			}
+			return cmd.Help()
+		},
 	}
 
+	cmd.Flags().BoolVarP(&showVersion, "version", "v", false, "Print the devcli version")
 	cmd.AddCommand(newLoginCommand())
 	cmd.AddCommand(newLogoutCommand())
 	cmd.AddCommand(newWhoamiCommand())

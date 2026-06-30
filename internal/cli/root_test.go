@@ -6,6 +6,7 @@ import (
 
 	"github.com/nkootstra/cli/internal/cli"
 	"github.com/nkootstra/cli/internal/testutil"
+	"github.com/nkootstra/cli/internal/version"
 )
 
 func TestRootHelpIncludesCommandDescriptions(t *testing.T) {
@@ -45,5 +46,34 @@ func TestUnknownCommandReturnsUsageError(t *testing.T) {
 	}
 	if !strings.Contains(stderr, "unknown command") {
 		t.Fatalf("expected unknown command error, got %q", stderr)
+	}
+}
+
+func TestRootVersionFlags(t *testing.T) {
+	oldVersion := version.Version
+	oldCommit := version.Commit
+	oldDate := version.Date
+	version.Version = "v1.2.3"
+	version.Commit = "abc123"
+	version.Date = "2026-06-30T12:00:00Z"
+	t.Cleanup(func() {
+		version.Version = oldVersion
+		version.Commit = oldCommit
+		version.Date = oldDate
+	})
+
+	for _, flag := range []string{"--version", "-v"} {
+		cmd := cli.NewRootCommand()
+
+		stdout, stderr, err := testutil.Execute(cmd, flag)
+		if err != nil {
+			t.Fatalf("%s failed: %v", flag, err)
+		}
+		if stderr != "" {
+			t.Fatalf("%s wrote stderr: %q", flag, stderr)
+		}
+		if !strings.Contains(stdout, "devcli v1.2.3 (abc123, 2026-06-30T12:00:00Z)") {
+			t.Fatalf("%s version output = %q", flag, stdout)
+		}
 	}
 }

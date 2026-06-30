@@ -6,6 +6,27 @@ on:
   pull_request:
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        run: |
+          mkdir -p dist
+          go build -o dist/devcli ./cmd/devcli
+
+      - name: Version smoke test
+        run: ./dist/devcli --version
+
   test:
     runs-on: ubuntu-latest
 

@@ -8,9 +8,31 @@
 go build -o devcli ./cmd/devcli
 ```
 
+Local builds use the default development version:
+
+```bash
+./devcli --version
+# devcli v0.0.0-dev
+```
+
+To test a next-version development build locally, inject a `{version}-dev` value:
+
+```bash
+VERSION=v0.2.0-dev
+COMMIT=$(git rev-parse --short HEAD)
+DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+go build \
+  -ldflags "-X github.com/nkootstra/cli/internal/version.Version=${VERSION} -X github.com/nkootstra/cli/internal/version.Commit=${COMMIT} -X github.com/nkootstra/cli/internal/version.Date=${DATE}" \
+  -o devcli \
+  ./cmd/devcli
+./devcli --version
+```
+
 ## Commands
 
 ```bash
+devcli --version # Show the devcli version
+devcli -v        # Show the devcli version
 devcli login   # Authenticate with an OIDC provider using auth code + PKCE
 devcli whoami  # Show the current logged-in identity
 devcli logout  # Remove the saved local session
@@ -46,6 +68,33 @@ export DEVCLI_OIDC_CALLBACK_LISTEN_ADDR=127.0.0.1:8765
 `devcli login` stores token-bearing state under the user config directory by default.
 Use `DEVCLI_AUTH_STATE_PATH` or `--auth-state-path` to isolate state for tests.
 Do not commit auth state files.
+
+## CI Secrets and OAuth Configuration
+
+The default CI workflow uses `oauth2-mock-server` and intentionally hardcodes only non-secret, test-only values:
+
+```yaml
+DEVCLI_OIDC_ISSUER_URL: "http://localhost:8080"
+DEVCLI_OIDC_CLIENT_ID: "devcli"
+DEVCLI_OIDC_SCOPES: "openid profile email"
+DEVCLI_OIDC_REDIRECT_URL: "http://127.0.0.1:8765/callback"
+DEVCLI_OIDC_CALLBACK_LISTEN_ADDR: "127.0.0.1:8765"
+```
+
+Do not commit real OAuth credentials, tokens, auth state files, or provider-specific secrets.
+For CI that targets a real OIDC provider, store values in GitHub Actions repository or environment secrets/variables and map them into the job environment:
+
+```yaml
+env:
+  DEVCLI_OIDC_ISSUER_URL: ${{ vars.DEVCLI_OIDC_ISSUER_URL }}
+  DEVCLI_OIDC_CLIENT_ID: ${{ secrets.DEVCLI_OIDC_CLIENT_ID }}
+  DEVCLI_OIDC_SCOPES: ${{ vars.DEVCLI_OIDC_SCOPES }}
+  DEVCLI_OIDC_REDIRECT_URL: ${{ vars.DEVCLI_OIDC_REDIRECT_URL }}
+  DEVCLI_OIDC_CALLBACK_LISTEN_ADDR: ${{ vars.DEVCLI_OIDC_CALLBACK_LISTEN_ADDR }}
+```
+
+`devcli` uses an authorization-code flow with PKCE and currently requires a client ID, not a client secret.
+If a future provider integration needs a client secret, add a dedicated environment variable and keep it in GitHub Actions secrets rather than source code.
 
 ## Local OIDC Mock Server
 
@@ -131,3 +180,33 @@ go test ./test/integration -v
 ```
 
 CI runs unit tests first, starts the mock provider, waits for OIDC discovery, and then runs the integration test with environment variables.
+
+## Releases
+
+The release workflow builds Linux, macOS, and Windows archives when a tag matching `v*` is pushed.
+Version metadata is injected at build time and is visible through `devcli --version` and `devcli -v`.
+
+Release a new version:
+
+1. Make sure `main` contains the commit you want to release.
+2. Pick a SemVer tag with a leading `v`, for example `v0.1.0`.
+3. Run the local checks:
+
+```bash
+go test ./...
+go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/ci.yml .github/workflows/release.yml
+```
+
+4. Create and push the tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+5. Wait for the GitHub `Release` workflow to finish.
+
+The workflow creates a GitHub release with `.tar.gz` artifacts and `.sha256` checksum files.
+It uses the tag as the released version, the build commit as the commit metadata, and the workflow build time as the date metadata.
+
+You can also run the `Release` workflow manually from GitHub Actions with a version input such as `v0.1.0`.
